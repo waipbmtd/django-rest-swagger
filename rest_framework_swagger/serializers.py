@@ -64,22 +64,60 @@ class PropertySerializer(serializers.Serializer):
         default='object',
         choices=TYPES
     )
-    default = serializers.CharField(allow_blank=True, required=False)
-    multipleOf = serializers.FloatField(required=False)
-    maximum = serializers.FloatField(required=False)
-    exclusiveMaximum = serializers.FloatField(required=False)
-    minimum = serializers.FloatField(required=False)
-    exclusiveMinimum = serializers.FloatField(required=False)
-    maxLength = serializers.IntegerField(required=False)
-    minLength = serializers.IntegerField(required=False)
-    pattern = serializers.CharField(required=False)
-    maxItems = serializers.IntegerField(required=False)
-    minItems = serializers.IntegerField(required=False)
-    uniqueItems = serializers.BooleanField(default=False, required=False)
+    default = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+    )
+    multipleOf = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    maximum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    exclusiveMaximum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    minimum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    exclusiveMinimum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    maxLength = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    minLength = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    pattern = serializers.CharField(
+        required=False,
+        allow_null=True
+    )
+    maxItems = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    minItems = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    uniqueItems = serializers.BooleanField(
+        default=False,
+        required=False
+    )
     maxProperties = serializers.IntegerField(required=False)
     minProperties = serializers.IntegerField(required=False)
     enum = serializers.ListField(
         required=False,
+        allow_null=True,
         child=serializers.CharField(),
     )
 
