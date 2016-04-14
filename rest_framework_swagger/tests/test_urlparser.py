@@ -2,7 +2,7 @@ import datetime
 from unittest.mock import patch
 
 from django.conf import settings
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from django.contrib.auth.models import User
 
 from django.test import TestCase
@@ -51,8 +51,7 @@ class CommentSerializer(serializers.Serializer):
 
 class UrlParserTest(TestCase):
     def setUp(self):
-        self.url_patterns = patterns(
-            '',
+        self.url_patterns = [
             url(r'a-view/?$', MockApiView.as_view(), name='a test view'),
             url(r'b-view$', MockApiView.as_view(), name='a test view'),
             url(r'c-view/$', MockApiView.as_view(), name='a test view'),
@@ -63,7 +62,7 @@ class UrlParserTest(TestCase):
             url(r'view-with-param/(:?<ID>\d+)/?$', MockApiView.as_view(),
                 name='another test view'),
             url(r'a-view-honky/?$', MockApiView.as_view(), name='a test view'),
-        )
+        ]
 
     def test_get_apis(self):
         urlparser = UrlParser()
@@ -110,7 +109,7 @@ class UrlParserTest(TestCase):
         self.assertEqual(len(self.url_patterns), len(apis))
 
     def test_flatten_url_tree_url_import(self):
-        urls = patterns('', url(r'api/base/path/', include(self.url_patterns)))
+        urls = [url(r'api/base/path/', include(self.url_patterns))]
         urlparser = UrlParser()
         apis = urlparser.get_apis(urls)
 
@@ -118,13 +117,12 @@ class UrlParserTest(TestCase):
 
     def test_resources_starting_with_letters_from_base_path(self):
         base_path = r'api/'
-        url_patterns = patterns(
-            '',
+        url_patterns = [
             url(r'test', MockApiView.as_view(), name='a test view'),
             url(r'pai_test', MockApiView.as_view(),
                 name='start with letters a, p, i'),
-        )
-        urls = patterns('', url(base_path, include(url_patterns)))
+        ]
+        urls = [url(base_path, include(url_patterns))]
         urlparser = UrlParser()
         apis = urlparser.get_apis(urls)
         resources = urlparser.get_top_level_apis(apis)
@@ -152,11 +150,10 @@ class UrlParserTest(TestCase):
         self.assertEqual(apis, apis2)
 
     def test_flatten_url_tree_excluded_namesapce(self):
-        urls = patterns(
-            '',
+        urls = [
             url(r'api/base/path/',
                 include(self.url_patterns, namespace='exclude'))
-        )
+        ]
         urlparser = UrlParser()
         apis = urlparser.__flatten_patterns_tree__(
             patterns=urls, exclude_namespaces='exclude')
@@ -179,12 +176,11 @@ class UrlParserTest(TestCase):
         router.register(r'other_views', MockApiViewSet)
         router.register(r'more_views', MockApiViewSet)
 
-        urls_app = patterns('', url(r'^', include(router.urls)))
-        urls = patterns(
-            '',
+        urls_app = [url(r'^', include(router.urls))]
+        urls = [
             url(r'api/', include(urls_app)),
             url(r'test/', include(urls_app))
-        )
+        ]
         urlparser = UrlParser()
         apis = urlparser.get_apis(urls)
 
@@ -201,10 +197,9 @@ class UrlParserTest(TestCase):
 
     def test_get_api_callback_not_rest_view(self):
         urlparser = UrlParser()
-        non_api = patterns(
-            '',
+        non_api = [
             url(r'something', NonApiView.as_view())
-        )
+        ]
         callback = urlparser.__get_pattern_api_callback__(non_api)
 
         self.assertIsNone(callback)
@@ -236,7 +231,7 @@ class UrlParserTest(TestCase):
         self.assertEqual(data['pattern'], pattern)
 
     def test_assemble_data_with_non_api_callback(self):
-        bad_pattern = patterns('', url(r'^some_view/', NonApiView.as_view()))
+        bad_pattern = [url(r'^some_view/', NonApiView.as_view())]
 
         urlparser = UrlParser()
         data = urlparser.__assemble_endpoint_data__(bad_pattern)
@@ -284,23 +279,26 @@ class NestedUrlParserTest(TestCase):
             def get(self, request):
                 pass
 
-        api_fuzzy_url_patterns = patterns(
-            '', url(r'^item/$', FuzzyApiView.as_view(), name='find_me'))
-        api_shiny_url_patterns = patterns(
-            '', url(r'^item/$', ShinyApiView.as_view(), name='hide_me'))
+        api_fuzzy_url_patterns = [
+            url(r'^item/$', FuzzyApiView.as_view(), name='find_me')
+        ]
+        api_shiny_url_patterns = [
+            url(r'^item/$', ShinyApiView.as_view(), name='hide_me')
+        ]
 
-        fuzzy_app_urls = patterns(
-            '', url(r'^api/', include(api_fuzzy_url_patterns,
-                                      namespace='api_fuzzy_app')))
-        shiny_app_urls = patterns(
-            '', url(r'^api/', include(api_shiny_url_patterns,
-                                      namespace='api_shiny_app')))
+        fuzzy_app_urls = [
+            url(r'^api/', include(api_fuzzy_url_patterns,
+                                  namespace='api_fuzzy_app'))
+        ]
+        shiny_app_urls = [
+            url(r'^api/', include(api_shiny_url_patterns,
+                                  namespace='api_shiny_app'))
+        ]
 
-        self.project_urls = patterns(
-            '',
+        self.project_urls = [
             url('my_fuzzy_app/', include(fuzzy_app_urls)),
             url('my_shiny_app/', include(shiny_app_urls)),
-        )
+        ]
 
     def test_exclude_nested_urls(self):
 

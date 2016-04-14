@@ -173,3 +173,21 @@ class EmailFieldTest(TestCase):
 
     def test_get_format(self):
         self.assertEqual('email', self.sut.get_format())
+
+
+class DateFieldTest(TestCase):
+    def setUp(self):
+        self.field = fields.DateField()
+        self.sut = PropertyIntrospector(name='date', field=self.field)
+
+    def test_get_format(self):
+        self.assertEqual('date', self.sut.get_format())
+
+
+class DateTimeFieldTest(TestCase):
+    def setUp(self):
+        self.field = fields.DateTimeField()
+        self.sut = PropertyIntrospector(name='datetime', field=self.field)
+
+    def test_get_format(self):
+        self.assertEqual('date-time', self.sut.get_format())

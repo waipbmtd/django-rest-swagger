@@ -25,7 +25,6 @@ else:
 
 
 class CigarViewSet(viewsets.ModelViewSet):
-
     """ Cigar resource. """
 
     serializer_class = CigarSerializer

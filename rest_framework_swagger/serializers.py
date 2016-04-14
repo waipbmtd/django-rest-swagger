@@ -29,6 +29,20 @@ FORMATS = [
 ]
 
 
+class DictListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        responses = {}
+        for response in data:
+            obj = self.child.to_representation(response)
+            responses.update(obj)
+
+        return responses
+
+    @property
+    def data(self):
+        return self.to_representation(self.validated_data)
+
+
 class ContactSerializer(serializers.Serializer):
     name = serializers.CharField(allow_blank=True, required=False)
     url = serializers.URLField(allow_blank=True, required=False)
@@ -41,12 +55,12 @@ class LicenseSerializer(serializers.Serializer):
 
 
 class InfoSerializer(serializers.Serializer):
-    title = serializers.CharField()
+    title = serializers.CharField(default='Django REST Swagger')
     description = serializers.CharField(allow_blank=True, required=False)
     termsOfService = serializers.CharField(allow_blank=True, required=False)
-    contact = ContactSerializer(required=False)
-    license = LicenseSerializer(required=False)
-    version = serializers.CharField(allow_blank=True, required=False)
+    contact = ContactSerializer(allow_null=True, required=False)
+    license = LicenseSerializer(allow_null=True, required=False)
+    version = serializers.CharField(default='2.0')
 
 
 class PropertySerializer(serializers.Serializer):
@@ -138,13 +152,16 @@ class SchemaObjectSerializer(serializers.Serializer):
         default='object',
         choices=TYPES
     )
-    properties = serializers.JSONField(required=False)
+    properties = serializers.DictField(required=False)
 
 
 class ResponseSerializer(serializers.Serializer):
     status_code = serializers.IntegerField()
-    description = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
     schema = SchemaObjectSerializer(required=False)
+
+    class Meta:
+        list_serializer_class = DictListSerializer
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -166,7 +183,9 @@ class ParameterSerializer(serializers.Serializer):
     required = serializers.BooleanField(default=False)
 
 
+
 class OperationSerializer(serializers.Serializer):
+    method = serializers.CharField()
     tags = serializers.ListField(required=False, allow_null=True)
     summary = serializers.CharField(max_length=120, required=False)
     description = serializers.CharField(required=False)
@@ -181,14 +200,22 @@ class OperationSerializer(serializers.Serializer):
     )
     parameters = ParameterSerializer(
         many=True, required=False, allow_null=True)
-    responses = serializers.JSONField()
+    responses = serializers.DictField()
     schemes = serializers.MultipleChoiceField(
         required=False,
         allow_null=True,
         choices=['http', 'https', 'ws', 'wss']
     )
     deprecated = serializers.BooleanField(default=False)
-    # TODO: security?
+    # TODO: security object?
+
+    class Meta:
+        list_serializer_class = DictListSerializer
+
+    def to_representation(self, obj):
+        return {
+            obj.pop('method'): obj
+        }
 
 
 class PathItemSerializer(serializers.Serializer):
@@ -199,6 +226,7 @@ class PathItemSerializer(serializers.Serializer):
 
 class SchemaSerializer(serializers.Serializer):
     swagger = serializers.CharField(default='2.0')
+    paths = serializers.DictField()
     info = InfoSerializer()
     host = serializers.CharField(allow_blank=True, required=False)
     basePath = serializers.CharField(allow_blank=True, required=False)

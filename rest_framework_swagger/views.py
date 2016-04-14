@@ -1,8 +1,11 @@
+from django.conf import settings
 from django.views.generic import TemplateView
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from . import serializers
+from . import introspectors
+from . import serializers, urlparser
 
 
 class SwaggerUI(TemplateView):
@@ -10,26 +13,62 @@ class SwaggerUI(TemplateView):
 
 
 class SwaggerJSON(APIView):
+    contact = None
+    info = None
+    license = None
+
     def get(self, request):
-        contact = serializers.ContactSerializer(data={
-            'name': 'Marc Gibbons',
-            'url': 'http://marcgibbons.com',
-            'email': 'marc_gibbons@rogers.com'
-        })
-        contact.is_valid(raise_exception=True)
+        return Response(self.get_schema_data())
 
-        license = serializers.LicenseSerializer(data={
-            'name': 'MIT',
-            'url': 'http://google.com'
-        })
-        license.is_valid(raise_exception=True)
+    def get_patterns(self):
+        parser = urlparser.UrlParser()
+        return parser.get_apis()
 
+    def get_schema_data(self):
+        serializer = serializers.SchemaSerializer(data={
+            'info': self.get_info_data(),
+            'paths': self.get_path_data()
+        })
+        serializer.is_valid(raise_exception=True)
+        return serializer.data
+
+    def get_info_data(self):
+        data = self.get_setting('info') or {}
+        data.update({
+            'contact': self.get_setting('contact'),
+            'license': self.get_setting('license'),
+        })
+        info = serializers.InfoSerializer(data=data)
+        info.is_valid(raise_exception=True)
+
+        return info.data
+
+    def get_setting(self, key):
+        setting = getattr(settings, 'SWAGGER_SETTINGS', {}) or {}
+        return setting.get(key)
+
+    def get_path_data(self):
+        parser = urlparser.UrlParser()
+        apis = parser.get_apis()
+
+        data = {}
+        for api in apis:
+            introspector = introspectors.PathIntrospector(
+                path=api['path'],
+                callback=api['callback'],
+                pattern=api['pattern']
+            )
+            data[api['path']] = introspector.get_data()
+
+        return data
+
+
+class SwaggerJSON2(APIView):
+    def get(self, request):
         info = serializers.InfoSerializer(data={
             'title': 'hello',
             'description': '## This is my example',
             'termsOfService': 'your mother',
-            'contact': contact.data,
-            'license': license.data,
             'version': 'infinty'
         })
         info.is_valid(raise_exception=True)

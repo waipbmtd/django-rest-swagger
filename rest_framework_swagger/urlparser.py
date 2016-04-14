@@ -9,7 +9,6 @@ from django.contrib.admindocs.views import simplify_regex
 
 from rest_framework.views import APIView
 
-from .views import SwaggerJSON
 
 
 class UrlParser(object):
@@ -161,6 +160,7 @@ class UrlParser(object):
         Verifies that pattern callback is a subclass of APIView, and returns the class
         Handles older django & django rest 'cls_instance'
         """
+        from .views import SwaggerJSON
         if not hasattr(pattern, 'callback'):
             return
 
