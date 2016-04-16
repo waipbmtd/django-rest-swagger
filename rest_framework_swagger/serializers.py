@@ -181,6 +181,7 @@ class ParameterSerializer(serializers.Serializer):
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, required=False)
     required = serializers.BooleanField(default=False)
+    type = serializers.ChoiceField(choices=TYPES)
 
 
 
@@ -188,7 +189,7 @@ class OperationSerializer(serializers.Serializer):
     method = serializers.CharField()
     tags = serializers.ListField(required=False, allow_null=True)
     summary = serializers.CharField(max_length=120, required=False)
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(allow_blank=True, required=False)
     operationId = serializers.CharField(required=False)
     consumes = serializers.ListField(
         child=serializers.CharField(),

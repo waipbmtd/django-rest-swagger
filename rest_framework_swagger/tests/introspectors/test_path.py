@@ -42,3 +42,16 @@ class PathIntrospectorTest(TestCase):
         ]
 
         self.assertCountEqual(expected, result.keys())
+
+    def test_get_path_parameters_without_any_parameters(self):
+        self.assertEqual([], self.sut.get_path_parameters())
+
+    def test_get_path_parameters_with_pk_parameter(self):
+        self.sut.path = r'/api/foo/{pk}'
+        result = self.sut.get_path_parameters()
+
+        self.assertCountEqual(result, [{
+            'name': 'pk',
+            'required': True,
+            'in': 'path'
+        }])

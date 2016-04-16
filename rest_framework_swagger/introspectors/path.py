@@ -1,3 +1,4 @@
+import re
 from rest_framework.viewsets import ViewSetMixin
 
 from .. import serializers
@@ -30,7 +31,8 @@ class PathIntrospector(object):
                 'method': method.lower(),
                 'summary': self.callback.get_view_name(),
                 'description': self.callback.get_view_description(),
-                'responses': self.get_response_object_for_method(method)
+                'responses': self.get_response_object_for_method(method),
+                'parameters': self.get_path_parameters()
             }
             for method in self.get_allowed_methods()
         ]
@@ -41,6 +43,7 @@ class PathIntrospector(object):
         return serializer.data
 
     def get_allowed_methods(self):
+        # TODO: viewset introspect
         if isinstance(self.callback, ViewSetMixin):
             return self.callback.http_method_names
 
@@ -62,3 +65,23 @@ class PathIntrospector(object):
         # TODO: something better
         urlparser = UrlParser()
         return urlparser.get_top_level_apis([{'path': self.path}])
+
+    def get_path_parameters(self):
+        """
+        Gets the parameters from the URL
+        """
+        url_params = re.findall('/{([^}]*)}', self.path)
+        data = []
+
+        for param in url_params:
+            data.append({
+                'in': 'path',
+                'name': param,
+                'type': 'string',
+                'required': True
+            })
+
+        serializer = serializers.ParameterSerializer(data=data, many=True)
+        serializer.is_valid()
+
+        return serializer.data
