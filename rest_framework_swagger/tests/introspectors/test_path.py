@@ -15,7 +15,7 @@ class FooListCreate(generics.ListCreateAPIView):
 
 class PathIntrospectorTest(TestCase):
     def setUp(self):
-        self.path = r'/api/foo'
+        self.path = r'/api/foo/{pk}'
         self.pattern = url(self.path, FooListCreate.as_view())
         self.callback = FooListCreate
 
@@ -24,6 +24,12 @@ class PathIntrospectorTest(TestCase):
             callback=self.callback,
             pattern=self.pattern
         )
+
+    def test_get_tags(self):
+        result = self.sut.get_tags()
+        expected = ['api/foo']
+
+        self.assertEqual(expected, result)
 
     def test_path(self):
         self.assertEqual(self.path, self.sut.path)
@@ -43,15 +49,11 @@ class PathIntrospectorTest(TestCase):
 
         self.assertCountEqual(expected, result.keys())
 
-    def test_get_path_parameters_without_any_parameters(self):
-        self.assertEqual([], self.sut.get_path_parameters())
-
     def test_get_path_parameters_with_pk_parameter(self):
-        self.sut.path = r'/api/foo/{pk}'
         result = self.sut.get_path_parameters()
-
         self.assertCountEqual(result, [{
             'name': 'pk',
             'required': True,
-            'in': 'path'
+            'in': 'path',
+            'type': 'string'
         }])

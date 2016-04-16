@@ -1,8 +1,6 @@
-# coding=utf-8
 """API Views for example application."""
 from rest_framework.views import Response, APIView
-from rest_framework import viewsets, status
-import rest_framework
+from rest_framework import viewsets
 
 from rest_framework.generics import ListCreateAPIView, \
     RetrieveUpdateDestroyAPIView
@@ -12,20 +10,19 @@ from .serializers import CigarSerializer, ManufacturerSerializer, \
     CountrySerializer, JambalayaSerializer, JambalayaQuerySerializer, \
     CigarJambalayaSerializer, JambalayaCigarsSerializer, CigarSerializerMinimal
 
-if rest_framework.VERSION < '3.0.0':
-    from rest_framework.decorators import action, link, api_view
-else:
-    from rest_framework.decorators import detail_route, api_view
-
-    def action():
-        return lambda func: detail_route(methods=['post'])(func)
-
-    def link():
-        return lambda func: detail_route()(func)
+from rest_framework.decorators import detail_route
 
 
 class CigarViewSet(viewsets.ModelViewSet):
-    """ Cigar resource. """
+    """
+    # Cigar resource.
+
+
+    This is my description
+
+
+    This is my other description
+    """
 
     serializer_class = CigarSerializer
     model = Cigar
@@ -37,19 +34,18 @@ class CigarViewSet(viewsets.ModelViewSet):
         """
         return super(CigarViewSet, self).list(request, *args, **kwargs)
 
-    @action()
+    @detail_route(methods=['post'])
     def set_price(self, request, pk):
         """An example action to on the ViewSet."""
         return Response('20$')
 
-    @link()
+    @detail_route
     def get_price(self, request, pk):
         """Return the price of a cigar."""
         return Response('20$')
 
 
 class ArtisanCigarViewSet(viewsets.ModelViewSet):
-
     """
     Cigar resource.
     ---
@@ -63,7 +59,6 @@ class ArtisanCigarViewSet(viewsets.ModelViewSet):
             - name: price
               type: number
     """
-
     serializer_class = CigarSerializer
     model = Cigar
     queryset = Cigar.objects.all()
@@ -74,12 +69,12 @@ class ArtisanCigarViewSet(viewsets.ModelViewSet):
         """
         return super(ArtisanCigarViewSet, self).list(request, *args, **kwargs)
 
-    @action()
+    @detail_route(methods=['post'])
     def set_price(self, request, pk):
         """An example action to on the ViewSet."""
         return Response('20$')
 
-    @link()
+    @detail_route()
     def get_price(self, request, pk):
         """Return the price of a cigar."""
         return Response('20$')
@@ -90,41 +85,29 @@ class ManufacturerList(ListCreateAPIView):
     Get the list of cigar manufacturers from the database.
     Excludes artisan manufacturers.
     """
-
-    model = Manufacturer
+    queryset = Manufacturer.objects.all()
     serializer_class = ManufacturerSerializer
 
 
 class ManufacturerDetails(RetrieveUpdateDestroyAPIView):
-
     """Return the details on a manufacturer."""
-
-    model = Manufacturer
+    queryset = Manufacturer.objects.all()
     serializer_class = ManufacturerSerializer
 
 
 class CountryList(ListCreateAPIView):
-
     """Gets a list of countries. Allows the creation of a new country."""
-
-    model = Country
+    queryset = Country.objects.all()
     serializer_class = CountrySerializer
 
 
 class CountryDetails(RetrieveUpdateDestroyAPIView):
-
     """Detailed view of the country."""
-
-    model = Country
+    queryset = Country.objects.all()
     serializer_class = CountrySerializer
-
-    def get_serializer_class(self):
-        self.serializer_class.context = {'request': self.request}
-        return self.serializer_class
 
 
 class MyCustomView(APIView):
-
     """
     This is a custom view that can be anything at all.
     It's not using a serializer class, but I can define my own parameters.

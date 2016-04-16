@@ -29,6 +29,11 @@ FORMATS = [
 ]
 
 
+class BaseSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        return {key: val for key, val in instance.items() if val is not None}
+
+
 class DictListSerializer(serializers.ListSerializer):
     def to_representation(self, data):
         responses = {}
@@ -43,18 +48,18 @@ class DictListSerializer(serializers.ListSerializer):
         return self.to_representation(self.validated_data)
 
 
-class ContactSerializer(serializers.Serializer):
+class ContactSerializer(BaseSerializer):
     name = serializers.CharField(allow_blank=True, required=False)
     url = serializers.URLField(allow_blank=True, required=False)
     email = serializers.EmailField(allow_blank=True, required=False)
 
 
-class LicenseSerializer(serializers.Serializer):
+class LicenseSerializer(BaseSerializer):
     name = serializers.CharField()
     url = serializers.URLField(allow_blank=True, required=False)
 
 
-class InfoSerializer(serializers.Serializer):
+class InfoSerializer(BaseSerializer):
     title = serializers.CharField(default='Django REST Swagger')
     description = serializers.CharField(allow_blank=True, required=False)
     termsOfService = serializers.CharField(allow_blank=True, required=False)
@@ -63,7 +68,7 @@ class InfoSerializer(serializers.Serializer):
     version = serializers.CharField(default='2.0')
 
 
-class PropertySerializer(serializers.Serializer):
+class PropertySerializer(BaseSerializer):
     name = serializers.CharField()
     description = serializers.CharField(
         allow_blank=True,
@@ -135,18 +140,17 @@ class PropertySerializer(serializers.Serializer):
         child=serializers.CharField(),
     )
 
-    def to_representation(self, obj):
+    def to_representation(self, instance):
+        instance = super().to_representation(instance)
         return {
-            obj.pop('name'): obj
+            instance.pop('name'): instance
         }
 
 
-class SchemaObjectSerializer(serializers.Serializer):
+class SchemaObjectSerializer(BaseSerializer):
     title = serializers.CharField()
     description = serializers.CharField(
-        allow_null=True,
         allow_blank=True,
-        required=False
     )
     type = serializers.ChoiceField(
         default='object',
@@ -155,10 +159,16 @@ class SchemaObjectSerializer(serializers.Serializer):
     properties = serializers.DictField(required=False)
 
 
-class ResponseSerializer(serializers.Serializer):
+class ReferenceSerializer(BaseSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['$ref'] = serializers.CharField(allow_blank=True)
+
+
+class ResponseSerializer(BaseSerializer):
     status_code = serializers.IntegerField()
     description = serializers.CharField(allow_blank=True)
-    schema = SchemaObjectSerializer(required=False)
+    schema = ReferenceSerializer(allow_null=True, required=False)
 
     class Meta:
         list_serializer_class = DictListSerializer
@@ -168,7 +178,7 @@ class ResponseSerializer(serializers.Serializer):
         return {data.pop('status_code'): data}
 
 
-class ParameterSerializer(serializers.Serializer):
+class ParameterSerializer(BaseSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['in'] = serializers.ChoiceField(choices=[
@@ -181,11 +191,11 @@ class ParameterSerializer(serializers.Serializer):
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, required=False)
     required = serializers.BooleanField(default=False)
+    schema = ReferenceSerializer(allow_null=True, required=False)
     type = serializers.ChoiceField(choices=TYPES)
 
 
-
-class OperationSerializer(serializers.Serializer):
+class OperationSerializer(BaseSerializer):
     method = serializers.CharField()
     tags = serializers.ListField(required=False, allow_null=True)
     summary = serializers.CharField(max_length=120, required=False)
@@ -219,16 +229,17 @@ class OperationSerializer(serializers.Serializer):
         }
 
 
-class PathItemSerializer(serializers.Serializer):
+class PathItemSerializer(BaseSerializer):
     parameters = ParameterSerializer(
         required=False, many=True, allow_null=True)
     get = OperationSerializer(required=False)
 
 
-class SchemaSerializer(serializers.Serializer):
+class SchemaSerializer(BaseSerializer):
     swagger = serializers.CharField(default='2.0')
     paths = serializers.DictField()
     info = InfoSerializer()
+    definitions = serializers.JSONField(allow_null=True)
     host = serializers.CharField(allow_blank=True, required=False)
     basePath = serializers.CharField(allow_blank=True, required=False)
     schemes = serializers.MultipleChoiceField(

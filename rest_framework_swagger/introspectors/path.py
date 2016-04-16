@@ -1,9 +1,7 @@
 import re
-from rest_framework.viewsets import ViewSetMixin
 
 from .. import serializers
 from ..urlparser import UrlParser
-
 
 STATUS_CODES = {
     'OPTIONS': [200, 404],
@@ -32,7 +30,7 @@ class PathIntrospector(object):
                 'summary': self.callback.get_view_name(),
                 'description': self.callback.get_view_description(),
                 'responses': self.get_response_object_for_method(method),
-                'parameters': self.get_path_parameters()
+                'parameters': self.get_parameters(method)
             }
             for method in self.get_allowed_methods()
         ]
@@ -43,10 +41,6 @@ class PathIntrospector(object):
         return serializer.data
 
     def get_allowed_methods(self):
-        # TODO: viewset introspect
-        if isinstance(self.callback, ViewSetMixin):
-            return self.callback.http_method_names
-
         return self.callback.allowed_methods
 
     def get_response_object_for_method(self, method):
@@ -54,7 +48,8 @@ class PathIntrospector(object):
         for status_code in STATUS_CODES.get(method, [200]):
             data.append({
                 'status_code': status_code,
-                'description': ''
+                'description': '',
+                'schema': self.get_schema(status_code)
             })
         serializer = serializers.ResponseSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
@@ -62,7 +57,6 @@ class PathIntrospector(object):
         return serializer.data
 
     def get_tags(self):
-        # TODO: something better
         urlparser = UrlParser()
         return urlparser.get_top_level_apis([{'path': self.path}])
 
@@ -85,3 +79,36 @@ class PathIntrospector(object):
         serializer.is_valid()
 
         return serializer.data
+
+    def get_schema(self, status_code):
+        if 203 >= status_code >= 200:
+            return self.get_success_schema()
+
+    def get_success_schema(self):
+        """
+        Returns schema for successful responses.
+        """
+        if not hasattr(self.callback, 'get_serializer_class'):
+            return
+
+        serializer = self.callback.get_serializer_class()
+        name = getattr(serializer, '__name__')
+        if not name:
+            return
+
+        return {'$ref': '#/definitions/%s' % name}
+
+    def get_parameters(self, method):
+        data = []
+        data += self.get_path_parameters()
+        if method in ['POST', 'PUT', 'PATCH']:
+            body = serializers.ParameterSerializer(data={
+                'in': 'body',
+                'name': 'body',
+                'type': 'object',
+                'schema': self.get_success_schema()
+            })
+            body.is_valid(raise_exception=True)
+            data.append(body.data)
+
+        return data

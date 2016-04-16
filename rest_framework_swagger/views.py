@@ -27,7 +27,8 @@ class SwaggerJSON(APIView):
     def get_schema_data(self):
         serializer = serializers.SchemaSerializer(data={
             'info': self.get_info_data(),
-            'paths': self.get_path_data()
+            'paths': self.get_path_data(),
+            'definitions': self.get_definitions()
         })
         serializer.is_valid(raise_exception=True)
         return serializer.data
@@ -56,93 +57,22 @@ class SwaggerJSON(APIView):
             introspector = introspectors.PathIntrospector(
                 path=api['path'],
                 callback=api['callback'],
-                pattern=api['pattern']
+                pattern=api['pattern'],
             )
             data[api['path']] = introspector.get_data()
 
         return data
 
+    def get_definitions(self):
+        definitions = {}
+        for pattern in self.get_patterns():
+            if not hasattr(pattern['callback'], 'get_serializer_class'):
+                continue
+            serializer_class = pattern['callback']().get_serializer_class()
+            introspector = introspectors.SchemaObjectIntrospector(
+                serializer_class
+            )
+            data = introspector.get_data()
+            definitions[data['title']] = data
 
-class SwaggerJSON2(APIView):
-    def get(self, request):
-        info = serializers.InfoSerializer(data={
-            'title': 'hello',
-            'description': '## This is my example',
-            'termsOfService': 'your mother',
-            'version': 'infinty'
-        })
-        info.is_valid(raise_exception=True)
-
-        properties = serializers.PropertySerializer(
-            many=True,
-            data=[{
-                'name': 'foo',
-                'description': 'foo bizz',
-                'type': 'string',
-            }, {
-                'name': 'email',
-                'description': 'The email sent by x',
-                'type': 'string',
-                'format': 'email'
-            }]
-        )
-        properties.is_valid(raise_exception=True)
-        properties_data = {k: v for d in properties.data for k, v in d.items()}
-
-        schema = serializers.SchemaObjectSerializer(data={
-            'title': 'Foo object',
-            'description': 'The very important foo object',
-            'properties': properties_data
-        })
-        schema.is_valid(raise_exception=True)
-        responses = serializers.ResponseSerializer(
-            many=True,
-            data=[{
-                'status_code': '200',
-                'description': 'All Good',
-                'schema': schema.data
-            }, {
-                'status_code': '404',
-                'description': 'Not Found',
-            }]
-        )
-        responses.is_valid(raise_exception=True)
-        responses_data = {k: v for d in responses.data for k, v in d.items()}
-
-        operation = serializers.OperationSerializer(data={
-            'tags': ['foo'],
-            'responses': responses_data,
-            'deprecated': True
-        })
-        operation.is_valid(raise_exception=True)
-
-        parameters = serializers.ParameterSerializer(data=[{
-            'name': 'foo',
-            'in': 'query'
-        }], many=True)
-        parameters.is_valid(raise_exception=True)
-
-        getPath = serializers.PathItemSerializer(data={
-            #'parameters': parameters.data,
-            'get': operation.data
-        })
-        getPath.is_valid(raise_exception=True)
-        paths = {
-            '/mypath': getPath.data,
-            '/mypath2': getPath.data
-        }
-
-        serializer = serializers.SchemaSerializer(data={
-            'swagger': '2.0',
-            'info': info.data,
-            'host': request.get_host(),
-            'basePath': '/my-api/',
-            'schemes': ['http', 'https'],
-            'consumes': ['application/json'],
-            'produces': ['application/json'],
-        })
-        serializer.is_valid(raise_exception=True)
-        data = serializer.data
-        data['paths'] = paths
-
-        return Response(data)
+        return definitions

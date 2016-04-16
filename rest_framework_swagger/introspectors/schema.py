@@ -5,24 +5,32 @@ from .property import PropertyIntrospector
 class SchemaObjectIntrospector(object):
     """
     Converts Serializer into Swagger Schema Object.
+
     """
-    def __init__(self, serializer_class):
+    def __init__(self, serializer_class, method=None):
+        assert method in [None, 'read', 'write'], (
+            'method must be either read or write'
+        )
         self.serializer_class = serializer_class
+        self.method = method
 
     def get_title(self):
         """Returns the class name."""
-        return self.serializer_class.__name__
+        return getattr(self.serializer_class, '__name__')
 
     def get_description(self):
         """Returns the Serializer docstring."""
-        doc = self.serializer_class.__doc__
-        if not doc:
-            return
-
+        doc = getattr(self.serializer_class, '__doc__') or ''
         return doc.strip()
 
     def get_fields(self):
-        return self.serializer_class().fields
+        fields = self.serializer_class().fields
+        if self.method == 'read':
+            return [field for field in fields if not field.write_only]
+        if self.method == 'write':
+            return [field for field in fields if not field.read_only]
+
+        return fields
 
     def get_data(self):
         serializer = serializers.SchemaObjectSerializer(data={
@@ -38,6 +46,6 @@ class SchemaObjectIntrospector(object):
         data = {}
         for key, field in self.get_fields().items():
             generator = PropertyIntrospector(key, field)
-            data[key] = generator.get_data()
+            data.update(generator.get_data())
 
         return data

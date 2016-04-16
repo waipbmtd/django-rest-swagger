@@ -35,7 +35,7 @@ class SerializerSchemaGeneratorTest(TestCase):
 
     def test_get_description_when_no_docstring(self):
         self.sut.serializer_class.__doc__ = None
-        self.assertIsNone(self.sut.get_description())
+        self.assertEqual('', self.sut.get_description())
 
     def test_get_fields(self):
         expected = self.sut.serializer_class().fields
@@ -55,8 +55,7 @@ class SerializerSchemaGeneratorTest(TestCase):
             property_mock.return_value.get_data.return_value = data
             result = self.sut.get_properties()
 
-        expected = {'myfield': data}
-        self.assertEqual(expected, result)
+        self.assertEqual(data, result)
 
         for name, field in field_mock.return_value.items():
             property_mock.assert_called_once_with(name, field)
