@@ -11,8 +11,6 @@ class SwaggerJSONViewTest(TestCase):
     def test_get_info_with_no_settings(self):
         result = self.sut.get_info_data()
         self.assertDictEqual({
-            'contact': None,
-            'license': None,
             'version': '2.0',
             'title': 'Django REST Swagger'
         }, result)

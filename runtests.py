@@ -16,12 +16,7 @@ if '--lintonly' in sys.argv:
 else:
     from django.core.management import execute_from_command_line
 
-    sys.path.append("./tests/cigar_example")
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cigar_example.settings")
+    sys.path.append("./example")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example.settings")
     import django.conf as conf
-    conf.settings.NOSE_ARGS[-1] = 'rest_framework_swagger'
-    execute_from_command_line([sys.argv[0], "test"])
-
-    sys.path.append("./tests/auth_example")
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "auth_example.settings")
     execute_from_command_line([sys.argv[0], "test"])
