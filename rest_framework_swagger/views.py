@@ -69,10 +69,27 @@ class SwaggerJSON(APIView):
             if not hasattr(pattern['callback'], 'get_serializer_class'):
                 continue
             serializer_class = pattern['callback']().get_serializer_class()
-            introspector = introspectors.SchemaObjectIntrospector(
-                serializer_class
-            )
-            data = introspector.get_data()
-            definitions[data['title']] = data
+            definitions.update(self.get_read_schema(serializer_class))
+            definitions.update(self.get_write_schema(serializer_class))
 
         return definitions
+
+    def get_read_schema(self, serializer_class):
+        introspector = introspectors.SchemaObjectIntrospector(
+            serializer_class=serializer_class,
+            method='read'
+        )
+        data = introspector.get_data()
+        key = '%sRead' % data['title']
+
+        return {key: data}
+
+    def get_write_schema(self, serializer_class):
+        introspector = introspectors.SchemaObjectIntrospector(
+            serializer_class=serializer_class,
+            method='write'
+        )
+        data = introspector.get_data()
+        key = '%sWrite' % data['title']
+
+        return {key: data}

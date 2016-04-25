@@ -49,6 +49,18 @@ class PathIntrospectorTest(TestCase):
 
         self.assertCountEqual(expected, result.keys())
 
+    def test_get_description(self):
+        self.assertEqual(
+            FooListCreate().get_view_description(),
+            self.sut.get_description()
+        )
+
+    def test_get_summary(self):
+        self.assertEqual(
+            FooListCreate().get_view_name(),
+            self.sut.get_summary()
+        )
+
     def test_get_path_parameters_with_pk_parameter(self):
         result = self.sut.get_path_parameters()
         self.assertCountEqual(result, [{
@@ -57,3 +69,33 @@ class PathIntrospectorTest(TestCase):
             'in': 'path',
             'type': 'string'
         }])
+
+
+class PathIntrospectorOverridesView(generics.ListCreateAPIView):
+    serializer_class = MySerializer
+
+    class Swagger:
+        GET = {
+            'tags': ['my tags'],
+            'summary': 'This is my summary',
+            'description': 'This is my description of sorts.'
+        }
+
+
+class PathIntrospectorOverridesTest(TestCase):
+    def setUp(self):
+        self.path = r'/api/fizz'
+        self.pattern = url(self.path, PathIntrospectorOverridesView.as_view())
+        self.callback = PathIntrospectorOverridesView
+
+        self.sut = PathIntrospector(
+            path=self.path,
+            pattern=self.pattern,
+            callback=self.callback
+        )
+
+    def test_get_method_data_returns_declared_overrides(self):
+        expected = self.callback.Swagger.GET
+        result = self.sut.get_method_data('GET')
+
+        self.assertDictContainsSubset(expected, result)

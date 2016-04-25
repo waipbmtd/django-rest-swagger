@@ -18,20 +18,14 @@ class PathIntrospector(object):
         self.path = path
         self.pattern = pattern
         self.callback = callback()
+        self.override = getattr(self.callback, 'Swagger', None)
 
     def get_data(self):
         return self.get_methods()
 
     def get_methods(self):
         data = [
-            {
-                'tags': self.get_tags(),
-                'method': method.lower(),
-                'summary': self.callback.get_view_name(),
-                'description': self.callback.get_view_description(),
-                'responses': self.get_response_object_for_method(method),
-                'parameters': self.get_parameters(method)
-            }
+            self.get_method_data(method)
             for method in self.get_allowed_methods()
         ]
 
@@ -39,6 +33,25 @@ class PathIntrospector(object):
         serializer.is_valid(raise_exception=True)
 
         return serializer.data
+
+    def get_method_data(self, method):
+        data = {
+            'tags': self.get_tags(),
+            'method': method.lower(),
+            'summary': self.get_summary(),
+            'description': self.get_description(),
+            'responses': self.get_response_object_for_method(method),
+            'parameters': self.get_parameters(method)
+        }
+        data.update(getattr(self.override, method, {}))
+
+        return data
+
+    def get_description(self):
+        return self.callback.get_view_description()
+
+    def get_summary(self):
+        return self.callback.get_view_name()
 
     def get_allowed_methods(self):
         return self.callback.allowed_methods
@@ -84,7 +97,7 @@ class PathIntrospector(object):
         if 203 >= status_code >= 200:
             return self.get_success_schema()
 
-    def get_success_schema(self):
+    def get_success_schema(self, method='read'):
         """
         Returns schema for successful responses.
         """
@@ -96,7 +109,10 @@ class PathIntrospector(object):
         if not name:
             return
 
-        return {'$ref': '#/definitions/%s' % name}
+        if method == 'write':
+            return {'$ref': '#/definitions/%sWrite' % name}
+
+        return {'$ref': '#/definitions/%sRead' % name}
 
     def get_parameters(self, method):
         data = []
@@ -106,7 +122,7 @@ class PathIntrospector(object):
                 'in': 'body',
                 'name': 'body',
                 'type': 'object',
-                'schema': self.get_success_schema()
+                'schema': self.get_success_schema(method='write')
             })
             body.is_valid(raise_exception=True)
             data.append(body.data)

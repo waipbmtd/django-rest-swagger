@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from django.test import TestCase
 from rest_framework import serializers
@@ -15,9 +15,9 @@ class MySerializer(serializers.Serializer):
     )
 
 
-class SerializerSchemaGeneratorTest(TestCase):
+class ReadSerializerSchemaGeneratorTest(TestCase):
     def setUp(self):
-        self.sut = schema.SchemaObjectIntrospector(MySerializer)
+        self.sut = schema.SchemaObjectIntrospector(MySerializer, method='read')
 
     def test_serializer_class_bound(self):
         self.assertEqual(
@@ -38,18 +38,23 @@ class SerializerSchemaGeneratorTest(TestCase):
         self.assertEqual('', self.sut.get_description())
 
     def test_get_fields(self):
-        expected = self.sut.serializer_class().fields
-        self.assertCountEqual(
-            expected,
-            self.sut.get_fields()
-        )
+        with patch.object(
+            MySerializer,
+            '_readable_fields',
+            new_callable=PropertyMock,
+            return_value=[MySerializer().fields['name']]
+        ) as mock:
+            self.assertCountEqual(
+                mock.return_value,
+                self.sut.get_fields()
+            )
 
     @patch('rest_framework_swagger.introspectors.schema.PropertyIntrospector')
     def test_get_properties(self, property_mock):
         with patch.object(
             schema.SchemaObjectIntrospector,
             'get_fields',
-            return_value={'myfield': serializers.IntegerField()}
+            return_value=[serializers.IntegerField()]
         ) as field_mock:
             data = {'maximum': 1, 'something': 'darkside'}
             property_mock.return_value.get_data.return_value = data
@@ -57,8 +62,8 @@ class SerializerSchemaGeneratorTest(TestCase):
 
         self.assertEqual(data, result)
 
-        for name, field in field_mock.return_value.items():
-            property_mock.assert_called_once_with(name, field)
+        for field in field_mock.return_value:
+            property_mock.assert_called_once_with(field.field_name, field)
 
     def test_get_data(self):
         title = 'Vandelay Industries'
