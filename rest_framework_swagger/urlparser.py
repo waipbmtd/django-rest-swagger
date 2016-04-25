@@ -13,13 +13,15 @@ from rest_framework.views import APIView
 
 class UrlParser(object):
 
-    def get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=[]):
+    def get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=None):
         """
         Returns all the DRF APIViews found in the project URLs
 
         patterns -- supply list of patterns (optional)
         exclude_namespaces -- list of namespaces to ignore (optional)
         """
+        exclude_namespaces = exclude_namespaces or []
+
         if patterns is None and urlconf is not None:
             if isinstance(urlconf, six.string_types):
                 urls = import_module(urlconf)
@@ -122,13 +124,14 @@ class UrlParser(object):
             'callback': callback,
         }
 
-    def __flatten_patterns_tree__(self, patterns, prefix='', filter_path=None, exclude_namespaces=[]):
+    def __flatten_patterns_tree__(self, patterns, prefix='', filter_path=None, exclude_namespaces=None):
         """
         Uses recursion to flatten url tree.
 
         patterns -- urlpatterns list
         prefix -- (optional) Prefix for URL pattern
         """
+        exclude_namespaces = exclude_namespaces or []
         pattern_list = []
 
         for pattern in patterns:

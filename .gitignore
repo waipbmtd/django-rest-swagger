@@ -41,7 +41,7 @@ nosetests.xml
 
 tests/cigar_example/rest_framework_swagger
 db.sql
-db.sqlite3
+**/*.sqlite3
 tests/cigar_example/static
 supervisord.log
 tests/cigar_example/static_root/

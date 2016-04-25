@@ -51,6 +51,9 @@ class CommonPropertyTest(TestCase):
     def test_get_enum_if_none(self):
         self.assertIsNone(self.sut.get_enum())
 
+    def test_get_read_only_if_none(self):
+        self.assertFalse(self.sut.get_read_only())
+
 
 class CharFieldTest(TestCase):
     def setUp(self):
@@ -191,3 +194,12 @@ class DateTimeFieldTest(TestCase):
 
     def test_get_format(self):
         self.assertEqual('date-time', self.sut.get_format())
+
+
+class ReadOnlyFieldTest(TestCase):
+    def setUp(self):
+        self.field = fields.ReadOnlyField()
+        self.sut = PropertyIntrospector(name='foo', field=self.field)
+
+    def test_read_only(self):
+        self.assertTrue(self.sut.get_read_only())

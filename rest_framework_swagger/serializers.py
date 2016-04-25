@@ -139,6 +139,7 @@ class PropertySerializer(BaseSerializer):
         allow_null=True,
         child=serializers.CharField(),
     )
+    readOnly = serializers.BooleanField(default=False)
 
     def to_representation(self, instance):
         instance = super().to_representation(instance)

@@ -50,6 +50,7 @@ class PropertyIntrospector(object):
             'maximum': self.get_maximum(),
             'minimum': self.get_minimum(),
             'enum': self.get_enum(),
+            'readOnly': self.get_read_only()
         })
         serializer.is_valid(raise_exception=True)
 
@@ -108,5 +109,5 @@ class PropertyIntrospector(object):
 
         return enums
 
-
-
+    def get_read_only(self):
+        return getattr(self.field, 'read_only', False)
