@@ -1,16 +1,7 @@
 import re
 
-from .. import serializers
+from .. import introspectors, serializers
 from ..urlparser import UrlParser
-
-STATUS_CODES = {
-    'OPTIONS': [200, 404],
-    'GET': [200, 404],
-    'POST': [201, 400],
-    'PUT': [200, 404, 400],
-    'PATCH': [200, 404, 400],
-    'DELETE': [204, 404],
-}
 
 
 class PathIntrospector(object):
@@ -21,55 +12,33 @@ class PathIntrospector(object):
         self.override = getattr(self.callback, 'Swagger', None)
 
     def get_data(self):
-        return self.get_methods()
+        parameters = self.get_path_parameters()
+        data = self.get_methods()
+        data.update({'parameters': parameters})
+
+        return data
 
     def get_methods(self):
-        data = [
-            self.get_method_data(method)
-            for method in self.get_allowed_methods()
-        ]
+        data = []
+        top_level_path = self.get_top_level_path()
+        for method in self.get_allowed_methods():
+            introspector = introspectors.ViewMethodIntrospector.factory(
+                method=method,
+                view=self.callback,
+                top_level_path=top_level_path
+            )
+            data.append(introspector.get_data())
 
         serializer = serializers.OperationSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
 
         return serializer.data
 
-    def get_method_data(self, method):
-        data = {
-            'tags': self.get_tags(),
-            'method': method.lower(),
-            'summary': self.get_summary(),
-            'description': self.get_description(),
-            'responses': self.get_response_object_for_method(method),
-            'parameters': self.get_parameters(method)
-        }
-        data.update(getattr(self.override, method, {}))
-
-        return data
-
-    def get_description(self):
-        return self.callback.get_view_description()
-
-    def get_summary(self):
-        return self.callback.get_view_name()
-
     def get_allowed_methods(self):
+        # TODO: check view vs. viewset
         return self.callback.allowed_methods
 
-    def get_response_object_for_method(self, method):
-        data = []
-        for status_code in STATUS_CODES.get(method, [200]):
-            data.append({
-                'status_code': status_code,
-                'description': '',
-                'schema': self.get_schema(status_code)
-            })
-        serializer = serializers.ResponseSerializer(data=data, many=True)
-        serializer.is_valid(raise_exception=True)
-
-        return serializer.data
-
-    def get_tags(self):
+    def get_top_level_path(self):
         urlparser = UrlParser()
         return urlparser.get_top_level_apis([{'path': self.path}])
 
@@ -92,39 +61,3 @@ class PathIntrospector(object):
         serializer.is_valid()
 
         return serializer.data
-
-    def get_schema(self, status_code):
-        if 203 >= status_code >= 200:
-            return self.get_success_schema()
-
-    def get_success_schema(self, method='read'):
-        """
-        Returns schema for successful responses.
-        """
-        if not hasattr(self.callback, 'get_serializer_class'):
-            return
-
-        serializer = self.callback.get_serializer_class()
-        name = getattr(serializer, '__name__')
-        if not name:
-            return
-
-        if method == 'write':
-            return {'$ref': '#/definitions/%sWrite' % name}
-
-        return {'$ref': '#/definitions/%sRead' % name}
-
-    def get_parameters(self, method):
-        data = []
-        data += self.get_path_parameters()
-        if method in ['POST', 'PUT', 'PATCH']:
-            body = serializers.ParameterSerializer(data={
-                'in': 'body',
-                'name': 'body',
-                'type': 'object',
-                'schema': self.get_success_schema(method='write')
-            })
-            body.is_valid(raise_exception=True)
-            data.append(body.data)
-
-        return data

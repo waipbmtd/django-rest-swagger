@@ -1,6 +1,6 @@
 from django.conf.urls import url
 from django.test import TestCase
-from rest_framework import serializers, generics
+from rest_framework import serializers, generics, views
 
 from ...introspectors.path import PathIntrospector
 
@@ -69,6 +69,24 @@ class PathIntrospectorTest(TestCase):
             'in': 'path',
             'type': 'string'
         }])
+
+    def test_get_allowed_methods_for_api_view(self):
+        """
+        Given that the callback is an APIView, the allowed_methods
+        list should be returned.
+        """
+        self.assertIsInstance(self.sut.callback, views.APIView)
+        expected = self.sut.callback.allowed_methods
+        result = self.sut.get_allowed_methods()
+
+        self.assertCountEqual(expected, result)
+
+    def test_get_allowed_methods_for_viewset_list(self):
+        viewset = viewsets.GenericViewset.as_view({'get': 'list'})
+        viewset.suffix = 'List'
+        expected = ['get', 'post']
+
+
 
 
 class PathIntrospectorOverridesView(generics.ListCreateAPIView):
