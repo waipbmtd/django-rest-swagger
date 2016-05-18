@@ -49,3 +49,4 @@ dist
 node_modules
 swagger-ui
 MANIFEST
+htmlcov

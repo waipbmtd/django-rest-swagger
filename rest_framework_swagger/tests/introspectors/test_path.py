@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.conf.urls import url
 from django.test import TestCase
 from rest_framework import serializers, generics, views
@@ -25,12 +27,6 @@ class PathIntrospectorTest(TestCase):
             pattern=self.pattern
         )
 
-    def test_get_tags(self):
-        result = self.sut.get_tags()
-        expected = ['api/foo']
-
-        self.assertEqual(expected, result)
-
     def test_path(self):
         self.assertEqual(self.path, self.sut.path)
 
@@ -40,26 +36,35 @@ class PathIntrospectorTest(TestCase):
     def test_callback(self):
         self.assertIsInstance(self.sut.callback, self.callback)
 
-    def test_get_methods(self):
-        result = self.sut.get_methods()
-        expected = [
-            method.lower() for
-            method in self.sut.callback.allowed_methods
-        ]
+    @patch.object(PathIntrospector, 'get_allowed_methods',
+                  return_value=['GET', 'PUT'])
+    @patch('rest_framework_swagger.introspectors.ViewMethodIntrospector')
+    def test_get_methods(self, introspector_mock, *args):
+        # Mock the return value from the view method introspectors
+        introspector_mock.factory.return_value.get_data.return_value = {
+            'foo': 'bar',
+        }
+        with patch(
+            'rest_framework_swagger.serializers.OperationSerializer'
+        ) as serializer_mock:
+            serializer_mock.return_value.is_valid.return_value = True
+            serializer_mock.return_value.data = [{'fizz': 'buzz'}]
+            result = self.sut.get_methods()
 
-        self.assertCountEqual(expected, result.keys())
-
-    def test_get_description(self):
+        allowed_methods = self.sut.get_allowed_methods()
         self.assertEqual(
-            FooListCreate().get_view_description(),
-            self.sut.get_description()
+            len(allowed_methods),
+            introspector_mock.factory.call_count
         )
 
-    def test_get_summary(self):
-        self.assertEqual(
-            FooListCreate().get_view_name(),
-            self.sut.get_summary()
-        )
+        for method in self.sut.get_allowed_methods():
+            introspector_mock.factory.assert_any_call(
+                method=method,
+                top_level_path=self.sut.get_top_level_path(),
+                view=self.sut.callback
+            )
+
+        self.assertCountEqual(result, serializer_mock.return_value.data)
 
     def test_get_path_parameters_with_pk_parameter(self):
         result = self.sut.get_path_parameters()
@@ -80,40 +85,3 @@ class PathIntrospectorTest(TestCase):
         result = self.sut.get_allowed_methods()
 
         self.assertCountEqual(expected, result)
-
-    def test_get_allowed_methods_for_viewset_list(self):
-        viewset = viewsets.GenericViewset.as_view({'get': 'list'})
-        viewset.suffix = 'List'
-        expected = ['get', 'post']
-
-
-
-
-class PathIntrospectorOverridesView(generics.ListCreateAPIView):
-    serializer_class = MySerializer
-
-    class Swagger:
-        GET = {
-            'tags': ['my tags'],
-            'summary': 'This is my summary',
-            'description': 'This is my description of sorts.'
-        }
-
-
-class PathIntrospectorOverridesTest(TestCase):
-    def setUp(self):
-        self.path = r'/api/fizz'
-        self.pattern = url(self.path, PathIntrospectorOverridesView.as_view())
-        self.callback = PathIntrospectorOverridesView
-
-        self.sut = PathIntrospector(
-            path=self.path,
-            pattern=self.pattern,
-            callback=self.callback
-        )
-
-    def test_get_method_data_returns_declared_overrides(self):
-        expected = self.callback.Swagger.GET
-        result = self.sut.get_method_data('GET')
-
-        self.assertDictContainsSubset(expected, result)

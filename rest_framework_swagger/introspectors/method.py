@@ -17,6 +17,8 @@ class SchemaType(object):
 
 
 class ViewMethodIntrospector(object):
+    SCHEMA_TYPE = None
+
     @classmethod
     def factory(cls, method, view, top_level_path):
         # TODO: handle OPTIONS, TRACE, CONNECT, HEAD
@@ -50,6 +52,7 @@ class ViewMethodIntrospector(object):
             'responses': self.get_response_object_for_method(method),
             'parameters': self.get_parameters()
         }
+        # Overwrite introspected data using definitions found in Swagger class
         data.update(getattr(self.override, method, {}))
 
         return data
