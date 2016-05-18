@@ -1,20 +1,15 @@
 import datetime
+from importlib import import_module
 from unittest.mock import patch
 
 from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib.auth.models import User
-
 from django.test import TestCase
-
-from importlib import import_module
 from django.views.generic import View
-
-
-from rest_framework.views import APIView, Response
-
 from rest_framework import serializers
 from rest_framework.routers import DefaultRouter
+from rest_framework.views import APIView, Response
 from rest_framework.viewsets import ModelViewSet
 
 from ..urlparser import UrlParser
@@ -163,11 +158,6 @@ class UrlParserTest(TestCase):
     def test_flatten_url_tree_url_import_with_routers(self):
 
         class MockApiViewSet(ModelViewSet):
-            serializer_class = CommentSerializer
-            model = User
-            queryset = User.objects.all()
-
-        class AnotherMockApiViewSet(ModelViewSet):
             serializer_class = CommentSerializer
             model = User
             queryset = User.objects.all()

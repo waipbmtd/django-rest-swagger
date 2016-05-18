@@ -1,16 +1,13 @@
 """API Views for example application."""
+from rest_framework.decorators import detail_route
+from rest_framework.generics import ListCreateAPIView, \
+    RetrieveUpdateDestroyAPIView
 from rest_framework.views import Response, APIView
 from rest_framework import viewsets
 
-from rest_framework.generics import ListCreateAPIView, \
-    RetrieveUpdateDestroyAPIView
-
-from .models import Cigar, Manufacturer, Country, Jambalaya
+from .models import Cigar, Manufacturer, Country
 from .serializers import CigarSerializer, ManufacturerSerializer, \
-    CountrySerializer, JambalayaSerializer, JambalayaQuerySerializer, \
-    CigarJambalayaSerializer, JambalayaCigarsSerializer, CigarSerializerMinimal
-
-from rest_framework.decorators import detail_route
+    CountrySerializer
 
 
 class CigarViewSet(viewsets.ModelViewSet):

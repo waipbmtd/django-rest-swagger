@@ -10,10 +10,10 @@ from django.contrib.admindocs.views import simplify_regex
 from rest_framework.views import APIView
 
 
-
 class UrlParser(object):
 
-    def get_apis(self, patterns=None, urlconf=None, filter_path=None, exclude_namespaces=None):
+    def get_apis(self, patterns=None, urlconf=None, filter_path=None,
+                 exclude_namespaces=None):
         """
         Returns all the DRF APIViews found in the project URLs
 
@@ -124,7 +124,8 @@ class UrlParser(object):
             'callback': callback,
         }
 
-    def __flatten_patterns_tree__(self, patterns, prefix='', filter_path=None, exclude_namespaces=None):
+    def __flatten_patterns_tree__(self, patterns, prefix='', filter_path=None,
+                                  exclude_namespaces=None):
         """
         Uses recursion to flatten url tree.
 
@@ -136,7 +137,9 @@ class UrlParser(object):
 
         for pattern in patterns:
             if isinstance(pattern, RegexURLPattern):
-                endpoint_data = self.__assemble_endpoint_data__(pattern, prefix, filter_path=filter_path)
+                endpoint_data = self.__assemble_endpoint_data__(
+                    pattern, prefix, filter_path=filter_path
+                )
 
                 if endpoint_data is None:
                     continue
@@ -145,7 +148,8 @@ class UrlParser(object):
 
             elif isinstance(pattern, RegexURLResolver):
 
-                if pattern.namespace is not None and pattern.namespace in exclude_namespaces:
+                if pattern.namespace is not None  \
+                        and pattern.namespace in exclude_namespaces:
                     continue
 
                 pref = prefix + pattern.regex.pattern
@@ -160,22 +164,25 @@ class UrlParser(object):
 
     def __get_pattern_api_callback__(self, pattern):
         """
-        Verifies that pattern callback is a subclass of APIView, and returns the class
+        Verifies that pattern callback is a subclass of APIView,
+        and returns the class.
         Handles older django & django rest 'cls_instance'
         """
+        # pylint: disable=R0401
         from .views import SwaggerJSON
         if not hasattr(pattern, 'callback'):
             return
 
-        if (hasattr(pattern.callback, 'cls') and
+        if (
+                hasattr(pattern.callback, 'cls') and
                 issubclass(pattern.callback.cls, APIView) and
-                not issubclass(pattern.callback.cls, SwaggerJSON)):
-
+                not issubclass(pattern.callback.cls, SwaggerJSON)
+        ):
             return pattern.callback.cls
 
         elif (hasattr(pattern.callback, 'cls_instance') and
-                isinstance(pattern.callback.cls_instance, APIView) and
-                not issubclass(pattern.callback.cls_instance, SwaggerJSON)):
+              isinstance(pattern.callback.cls_instance, APIView) and
+              not issubclass(pattern.callback.cls_instance, SwaggerJSON)):
 
             return pattern.callback.cls_instance
 

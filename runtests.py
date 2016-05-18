@@ -4,7 +4,7 @@ import sys
 import subprocess
 
 if '--lintonly' in sys.argv:
-    args = ['rest_framework_swagger', 'example', 'docs']
+    args = ['rest_framework_swagger', 'example']
     pylint_cmd = ['pylint'] + args
     pep8_cmd = ['pep8'] + args
 
