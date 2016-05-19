@@ -1,5 +1,7 @@
+from unittest.mock import patch
+
 from django.test import TestCase
-from rest_framework import generics, serializers
+from rest_framework import generics, parsers, serializers
 
 from ...introspectors import method as introspectors
 
@@ -71,3 +73,41 @@ class PathIntrospectorOverridesTest(TestCase):
         result = self.sut.get_method_data('GET')
 
         self.assertDictContainsSubset(expected, result)
+
+
+class WriteIntrospector(
+        introspectors.WriteMixin,
+        introspectors.ViewMethodIntrospector
+):
+    pass
+
+
+class WriteIntrospectorTest(TestCase):
+    def setUp(self):
+        self.method = 'POST'
+        self.view = FooListCreate()
+        self.top_level_path = 'fizz'
+
+        self.sut = WriteIntrospector(
+            method=self.method,
+            view=self.view,
+            top_level_path=self.top_level_path
+        )
+
+    def test_accepts_form_data_true_with_form_parser(self):
+        with patch.object(FooListCreate, 'get_parsers') as mock:
+            mock.return_value = [
+                parsers.JSONParser(),
+                parsers.FormParser()
+            ]
+            self.assertTrue(self.sut.accepts_form_data())
+
+    def test_accepts_form_data_true_with_multi_parser(self):
+        with patch.object(FooListCreate, 'get_parsers') as mock:
+            mock.return_value = [parsers.MultiPartParser()]
+            self.assertTrue(self.sut.accepts_form_data())
+
+    def test_accepts_form_data_false_if_json_only(self):
+        with patch.object(FooListCreate, 'get_parsers') as mock:
+            mock.return_value = [parsers.JSONParser()]
+            self.assertFalse(self.sut.accepts_form_data())

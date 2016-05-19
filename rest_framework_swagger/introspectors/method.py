@@ -1,3 +1,4 @@
+from rest_framework import parsers
 from .. import serializers
 
 
@@ -114,6 +115,22 @@ class ReadMixin(object):
 
 class WriteMixin(object):
     SCHEMA_TYPE = SchemaType.WRITE
+
+    def accepts_form_data(self):
+        """
+        Returns True if the APIView accepts form data.
+
+        These include:
+            - application/x-www-form-urlencoded
+            - multipart/form-data
+        """
+        for parser in self.view.get_parsers():
+            if isinstance(parser, parsers.FormParser):
+                return True
+            if isinstance(parser, parsers.MultiPartParser):
+                return True
+
+        return False
 
     def get_parameters(self):
         parameters = super().get_parameters()
