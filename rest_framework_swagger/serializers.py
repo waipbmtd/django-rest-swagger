@@ -190,10 +190,79 @@ class ParameterSerializer(BaseSerializer):
             'body'
         ])
     name = serializers.CharField()
-    description = serializers.CharField(allow_blank=True, required=False)
+    description = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        required=False
+    )
     required = serializers.BooleanField(default=False)
     schema = ReferenceSerializer(allow_null=True, required=False)
     type = serializers.ChoiceField(choices=TYPES)
+
+
+class ItemSerializer(ParameterSerializer):
+    format = serializers.ChoiceField(
+        allow_blank=True,
+        required=False,
+        choices=FORMATS
+    )
+    allowEmptyValue = serializers.BooleanField(default=False)
+    collectionFormat = serializers.ChoiceField(
+        allow_blank=True,
+        required=False,
+        choices=[
+            'csv',
+            'ssv',
+            'tsv',
+            'pipes'
+        ]
+    )
+    default = serializers.CharField(required=False, allow_blank=True)
+    maximum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    exclusiveMaximum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    minimum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    exclusiveMinimum = serializers.FloatField(
+        required=False,
+        allow_null=True
+    )
+    maxLength = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    minLength = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    pattern = serializers.CharField(
+        required=False,
+        allow_null=True
+    )
+    maxItems = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    minItems = serializers.IntegerField(
+        required=False,
+        allow_null=True
+    )
+    uniqueItems = serializers.BooleanField(
+        default=False,
+        required=False
+    )
+    enum = serializers.ListField(
+        required=False,
+        allow_null=True,
+        child=serializers.CharField(),
+    )
 
 
 class OperationSerializer(BaseSerializer):

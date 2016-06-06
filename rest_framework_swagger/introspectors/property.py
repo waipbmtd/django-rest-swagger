@@ -30,32 +30,7 @@ FORMAT_MAP = {
 }
 
 
-class PropertyIntrospector(object):
-    """
-    Converts DRF Serializer Field into Swagger Property Object.
-    """
-    def __init__(self, name, field):
-        self.name = name
-        self.field = field
-
-    def get_data(self):
-        serializer = serializers.PropertySerializer(data={
-            'name': self.name,
-            'description': self.get_description(),
-            'type': self.get_type(),
-            'default': self.get_default(),
-            'maxLength': self.get_max_length(),
-            'minLength': self.get_min_length(),
-            'required': self.get_required(),
-            'maximum': self.get_maximum(),
-            'minimum': self.get_minimum(),
-            'enum': self.get_enum(),
-            'readOnly': self.get_read_only()
-        })
-        serializer.is_valid(raise_exception=True)
-
-        return serializer.data
-
+class PropertyIntrospectorMixin(object):
     def get_name(self):
         return self.name
 
@@ -111,3 +86,57 @@ class PropertyIntrospector(object):
 
     def get_read_only(self):
         return getattr(self.field, 'read_only', False)
+
+
+class PropertyIntrospector(PropertyIntrospectorMixin):
+    """
+    Converts DRF Serializer Field into Swagger Property Object.
+    """
+    def __init__(self, name, field):
+        self.name = name
+        self.field = field
+
+    def get_data(self):
+        serializer = serializers.PropertySerializer(data={
+            'name': self.name,
+            'description': self.get_description(),
+            'type': self.get_type(),
+            'default': self.get_default(),
+            'maxLength': self.get_max_length(),
+            'minLength': self.get_min_length(),
+            'required': self.get_required(),
+            'maximum': self.get_maximum(),
+            'minimum': self.get_minimum(),
+            'enum': self.get_enum(),
+            'readOnly': self.get_read_only()
+        })
+        serializer.is_valid(raise_exception=True)
+
+        return serializer.data
+
+
+class ItemIntrospector(PropertyIntrospectorMixin):
+    """
+    Converts DRF Serializer Field into Swagger Property Object.
+    """
+    def __init__(self, field, parameter_in):
+        self.field = field
+        self.parameter_in = parameter_in
+
+    def get_data(self):
+        serializer = serializers.ItemSerializer(data={
+            'name': self.field.field_name,
+            'in': self.parameter_in,
+            'description': self.get_description(),
+            'type': self.get_type(),
+            'default': self.get_default(),
+            'maxLength': self.get_max_length(),
+            'minLength': self.get_min_length(),
+            'required': self.get_required(),
+            'maximum': self.get_maximum(),
+            'minimum': self.get_minimum(),
+            'enum': self.get_enum(),
+        })
+        serializer.is_valid(raise_exception=True)
+
+        return serializer.data

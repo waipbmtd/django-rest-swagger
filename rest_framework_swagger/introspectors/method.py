@@ -1,5 +1,7 @@
 from rest_framework import parsers
+
 from .. import serializers
+from ..introspectors import ItemIntrospector
 
 
 STATUS_CODES = {
@@ -136,15 +138,36 @@ class WriteMixin(object):
         parameters = super().get_parameters()
         # TODO: determine which type of parameters to return based
         # on the parser classes
-        body = serializers.ParameterSerializer(data={
-            'in': 'body',
-            'name': 'body',
-            'type': 'object',
-            'schema': self.get_success_schema(method='write')
-        })
-        body.is_valid(raise_exception=True)
+        if self.accepts_form_data():
+            parameters += self.get_form_parameters()
+        else:
+            body = serializers.ParameterSerializer(data={
+                'in': 'body',
+                'name': 'body',
+                'type': 'object',
+                'schema': self.get_success_schema(method='write')
+            })
+            body.is_valid(raise_exception=True)
+            parameters.append(body.data)
 
-        parameters.append(body.data)
+        return parameters
+
+    def get_form_parameters(self):
+        if not hasattr(self.view, 'get_serializer_class'):
+            return []
+        serializer = self.view.get_serializer_class()()
+        if not serializer:
+            return []
+
+        parameters = []
+        for field in serializer._writable_fields:
+            introspector = ItemIntrospector(
+                field=field,
+                parameter_in='formData'
+            )
+            parameters.append(introspector.get_data())
+
+        return parameters
 
 
 class GetListIntrospector(ReadMixin, ViewMethodIntrospector):
