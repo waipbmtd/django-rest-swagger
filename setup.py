@@ -40,11 +40,11 @@ Docs @ https://django-rest-swagger.readthedocs.io/
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='django-rest-swagger',
+    name='django-rest-swagger-devin',
     version=VERSION,
     install_requires=[
-        'coreapi',
-        'openapi-codec',
+        'coreapi-devin',
+        'openapi-codec-devin',
         'simplejson'
     ],
     packages=['rest_framework_swagger'],
@@ -53,9 +53,9 @@ setup(
     description='Swagger UI for Django REST Framework 3.4+',
     long_description=README,
     test_suite='tests',
-    author='Marc Gibbons',
-    author_email='marc_gibbons@rogers.com',
-    url='https://github.com/marcgibbons/django-rest-swagger',
+    author='Devin',
+    author_email='waipbmtd@gmail.com',
+    url='https://github.com/waipbmtd/django-rest-swagger-schemas',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',

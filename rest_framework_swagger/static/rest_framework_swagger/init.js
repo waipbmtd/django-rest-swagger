@@ -30,6 +30,10 @@ $(function () {
     onFailure: function(data) {
       log("Unable to Load SwaggerUI");
     },
+    docExpansion: "none",
+    jsonEditor: false,
+    defaultModelRendering: 'schema',
+    showRequestHeaders: false
   };
   $.extend(settings, JSON.parse($('#drs-settings').html()));
 
